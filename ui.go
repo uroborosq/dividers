@@ -38,7 +38,7 @@ func (m model) View() string {
 		return ""
 	}
 	var s strings.Builder
-	s.WriteString("Pick a file. Press Q to quit")
+	s.WriteString("Pick a file or press Q to quit")
 	s.WriteString("\n\n" + m.Model.View() + "\n")
 	return s.String()
 }
