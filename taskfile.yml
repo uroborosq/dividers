@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  build:
+    cmds:
+      - cmd: go build -o dividers.exe .
+        platforms: [windows]
+      - cmd: go build -o dividers .
+        platforms: [linux]
+  run:
+    cmds:
+      - go run .
