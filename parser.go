@@ -3,39 +3,76 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
+	"github.com/samber/lo"
 	"github.com/xuri/excelize/v2"
 )
 
-func parseFile(path string) error {
+func parseFile(path string) ([]Floor, [][]Divider, error) {
 	f, err := excelize.OpenFile(path)
 	if err != nil {
-		return fmt.Errorf("failed to open file %q: %w", path, err)
+		return nil, nil, fmt.Errorf("failed to open file %q: %w", path, err)
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to close file %q: %w", path, err)
+			fmt.Fprintf(os.Stderr, "failed to close file %q: %s", path, err.Error())
 		}
 	}()
 
-	// Get value from cell by given worksheet name and cell reference.
-	cell, err := f.GetCellValue("Sheet1", "B2")
-	if err != nil {
-		return err
-	}
-	fmt.Println(cell)
+	var (
+		floors   []Floor
+		dividers [][]Divider
+	)
+	sheetName := f.GetSheetList()[0]
 
-	// Get all the rows in the Sheet1.
-	rows, err := f.GetRows("Sheet1")
+	rows, err := f.GetRows(sheetName, excelize.Options{RawCellValue: true})
 	if err != nil {
-		return err
+		return nil, nil, fmt.Errorf("failed to open sheet %q: %w", sheetName, err)
 	}
-	for _, row := range rows {
-		for _, colCell := range row {
-			fmt.Print(colCell, "\t")
+
+	var offset = 2
+
+	for i := 3; ; i++ {
+		if len(rows[i]) == 0 {
+			break
 		}
-		fmt.Println()
+
+		var numbers []int
+		for j := 0; j < len(rows[i]); j++ {
+			number, err := strconv.Atoi(strings.TrimSpace(rows[i][j]))
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to parse digits in cell %d:%d : %w", i, j, err)
+			}
+
+			numbers = append(numbers, number)
+		}
+
+		offset++
+		floors = append(floors, Floor{
+			Number: numbers[0],
+			Risers: lo.Map(numbers[3:], func(number int, _ int) Riser {
+				return Riser{FlatNumber: number}
+			}),
+			Flats: FlatRange{
+				FlatStart: numbers[1],
+				FlatEnd:   numbers[2],
+			},
+		})
 	}
 
-	return nil
+	dividers = make([][]Divider, (len(rows[offset+5])+1)/2)
+
+	for i := offset + 5; i < len(rows); i++ {
+		for j := 0; j < len(rows[i]); j += 2 {
+			portNumber, err := strconv.Atoi(strings.TrimSpace(rows[i][j]))
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to parse cell %d:%d: %w", i, j, err)
+			}
+			dividers[j/2] = append(dividers[j/2], Divider{PortNumber: portNumber})
+		}
+	}
+
+	return floors, dividers, nil
 }

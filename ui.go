@@ -28,6 +28,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if didSelect, path := m.DidSelectFile(msg); didSelect {
 		m.selectedFile = path
+		cmd = tea.Quit
 	}
 
 	return m, cmd

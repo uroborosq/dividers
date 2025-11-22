@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/kr/pretty"
 )
 
 func getWorkingDirectory() (string, error) {
@@ -24,21 +26,26 @@ func getWorkingDirectory() (string, error) {
 
 func main() {
 	// Получить путь к рабочей папке, из которой будет начат поиск исходного файла.
-	workingDirectory, err := getWorkingDirectory()
-	if err != nil {
-		panic(err)
-	}
-
-	// Запускаем диалог поиска нужного исходного файла в заданной рабочей папке.
-	filePath, choosed := chooseFile(workingDirectory)
-	if choosed {
-		fmt.Println("no file choose, exiting")
-		return
-	}
+	// workingDirectory, err := getWorkingDirectory()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	//
+	// // Запускаем диалог поиска нужного исходного файла в заданной рабочей папке.
+	// filePath, choosed := chooseFile(workingDirectory)
+	// if choosed {
+	// 	fmt.Println("no file choose, exiting")
+	// 	return
+	// }
 
 	// Считываем исходные данные из найденного файла.
-	err = parseFile(filePath)
+	floors, dividers, err := parseFile("./Кв-емкость.xlsx")
 	if err != nil {
 		panic(err)
 	}
+
+	pretty.Println(floors)
+	pretty.Println(dividers)
+
+	calculate(floors, dividers)
 }
