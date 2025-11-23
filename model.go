@@ -28,3 +28,7 @@ type Divider struct {
 	PortNumber int
 	Flats      []FlatRange
 }
+
+func (d Divider) GetPortNumber() int {
+	return d.PortNumber
+}
