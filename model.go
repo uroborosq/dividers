@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 // Этаж
 type Floor struct {
 	// Номер этажа
@@ -15,6 +17,14 @@ type FlatRange struct {
 	FlatStart int
 	// Конечный номер квартиры
 	FlatEnd int
+}
+
+func (r FlatRange) String() string {
+	if r.FlatStart == r.FlatEnd {
+		return fmt.Sprintf("%dкв", r.FlatStart)
+	}
+
+	return fmt.Sprintf("%d-%dкв", r.FlatStart, r.FlatEnd)
 }
 
 // Стояк отопления

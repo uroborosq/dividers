@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"slices"
 
-	"github.com/kr/pretty"
 	"github.com/samber/lo"
 )
 
@@ -22,23 +20,6 @@ func calculate(floors []Floor, dividers [][]Divider) [][]Divider {
 		riserToPortNumber[i] = lo.SumBy(dividers[i], Divider.GetPortNumber)
 	}
 
-	for floor := range slices.Values(floors) {
-		fmt.Print(floor.Number, "| ")
-		var j int
-		var number int
-
-		for i := floor.Flats.FlatStart; i <= floor.Flats.FlatEnd; i++ {
-			if i-floor.Flats.FlatStart-number == floor.Risers[j].FlatNumber {
-				fmt.Print("| ")
-				number += floor.Risers[j].FlatNumber
-				j++
-			}
-
-			fmt.Print(i, " ")
-		}
-		fmt.Println()
-	}
-
 	for i, riser := range dividers {
 		var flatPointer, floorPointer int
 
@@ -52,32 +33,31 @@ func calculate(floors []Floor, dividers [][]Divider) [][]Divider {
 				previousRiserFlats := lo.SumBy(floor.Risers[:i], func(item Riser) int { return item.FlatNumber })
 				nextRiserFlats := lo.SumBy(floor.Risers[i+1:], func(item Riser) int { return item.FlatNumber })
 
-				fmt.Println(flatPointer)
 				flatLimit := max(0, floor.Risers[i].FlatNumber-flatLeft)
 				dividers[i][j].Flats = append(dividers[i][j].Flats, FlatRange{
 					FlatStart: floor.Flats.FlatStart + previousRiserFlats + flatPointer,
 					FlatEnd:   floor.Flats.FlatEnd - nextRiserFlats - flatLimit,
 				})
 
-				fmt.Println(flatLeft)
-				flatLeft = flatLeft - floor.Risers[i].FlatNumber
+				// fmt.Println(flatLeft)
+				flatLeft = flatLeft - floor.Risers[i].FlatNumber + flatPointer
 				flatPointer = 0
 
 				if flatLimit == 0 {
 					floorPointer++
 				}
 
-				if flatLeft <= 0 {
+				if flatLeft < 0 {
 					flatPointer = flatLeft + floor.Risers[i].FlatNumber
+					break
+				} else if flatLeft == 0 {
 					break
 				}
 			}
 		}
 	}
 
-	_, _ = pretty.Println(dividers)
-
-	return nil
+	return dividers
 }
 
 // 12| 536 537 538 539 | 540 541 542 543 544
@@ -92,3 +72,6 @@ func calculate(floors []Floor, dividers [][]Divider) [][]Divider {
 // 3| 443 444 445 446 447 448 | 449 450 451 452 453 454 455
 // 2| 430 431 432 433 434 435 | 436 437 438 439 440 441 442
 // 1| 417 418 419 420 421 422 | 423 424 425 426 427 428 429
+
+// 509 - 536
+// 482-483,491-510

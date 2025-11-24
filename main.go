@@ -3,8 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
+	"strings"
 
-	"github.com/kr/pretty"
+	"github.com/fatih/color"
+	"github.com/olekukonko/tablewriter"
+	"github.com/samber/lo"
 )
 
 func getWorkingDirectory() (string, error) {
@@ -44,8 +48,71 @@ func main() {
 		panic(err)
 	}
 
-	pretty.Println(floors)
-	pretty.Println(dividers)
+	dividers = calculate(floors, dividers)
 
-	calculate(floors, dividers)
+	table := tablewriter.NewWriter(os.Stdout)
+
+	for j := range len(dividers[0]) {
+		var row []any
+		for _, riser := range dividers {
+			row = append(row, strings.Join(lo.Map(riser[j].Flats, func(item FlatRange, _ int) string { return item.String() }), ","))
+		}
+
+		err = table.Append(row...)
+		if err != nil {
+			panic(err)
+		}
+
+	}
+
+	err = table.Render()
+	if err != nil {
+		panic(err)
+	}
+
+	w := tablewriter.NewWriter(os.Stdout)
+
+	flatToDivider := make(map[int]int)
+	for _, riser := range dividers {
+		for j, divider := range riser {
+			for _, flatRange := range divider.Flats {
+				for i := flatRange.FlatStart; i <= flatRange.FlatEnd; i++ {
+					flatToDivider[i] = j
+				}
+			}
+		}
+	}
+
+	for floor := range slices.Values(floors) {
+		var row []any
+
+		row = append(row, floor.Number)
+		var j int
+		var number int
+
+		var flats []string
+
+		for i := floor.Flats.FlatStart; i <= floor.Flats.FlatEnd; i++ {
+			if i-floor.Flats.FlatStart-number == floor.Risers[j].FlatNumber {
+				number += floor.Risers[j].FlatNumber
+				j++
+
+				row = append(row, strings.Join(flats, " "))
+				flats = nil
+			}
+
+			flats = append(flats, color.New(color.Attribute(31+flatToDivider[i]%7)).Sprint(i))
+		}
+		row = append(row, strings.Join(flats, " "))
+
+		err := w.Append(row...)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	err = w.Render()
+	if err != nil {
+		panic(err)
+	}
 }
