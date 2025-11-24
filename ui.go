@@ -1,10 +1,15 @@
 package main
 
 import (
+	"os"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/filepicker"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/fatih/color"
+	"github.com/olekukonko/tablewriter"
+	"github.com/samber/lo"
 )
 
 type model struct {
@@ -56,4 +61,87 @@ func chooseFile(path string) (string, bool) {
 	mm := tm.(model)
 
 	return mm.selectedFile, mm.selectedFile == ""
+}
+
+type Displayer struct {
+	floors   []Floor
+	dividers [][]Divider
+}
+
+func NewDisplayer(floors []Floor, dividers [][]Divider) *Displayer {
+	return &Displayer{
+		floors:   floors,
+		dividers: dividers,
+	}
+
+}
+
+func (d Displayer) displayDividers() error {
+	table := tablewriter.NewWriter(os.Stdout)
+
+	for j := range len(d.dividers[0]) {
+		var row []any
+		for _, riser := range d.dividers {
+			flats := strings.Join(lo.Map(riser[j].Flats, func(item FlatRange, _ int) string { return item.String() }), ",")
+
+			row = append(row, randomColor(j, flats))
+		}
+
+		err := table.Append(row...)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return table.Render()
+}
+
+func (d Displayer) displayFloors() error {
+	table := tablewriter.NewWriter(os.Stdout)
+
+	flatToDivider := make(map[int]int)
+	for _, riser := range d.dividers {
+		for j, divider := range riser {
+			for _, flatRange := range divider.Flats {
+				for i := flatRange.FlatStart; i <= flatRange.FlatEnd; i++ {
+					flatToDivider[i] = j
+				}
+			}
+		}
+	}
+
+	for floor := range slices.Values(d.floors) {
+		var row []any
+
+		row = append(row, floor.Number)
+		var j int
+		var number int
+
+		var flats []string
+
+		for i := floor.Flats.FlatStart; i <= floor.Flats.FlatEnd; i++ {
+			if i-floor.Flats.FlatStart-number == floor.Risers[j].FlatNumber {
+				number += floor.Risers[j].FlatNumber
+				j++
+
+				row = append(row, strings.Join(flats, " "))
+				flats = nil
+			}
+
+			flats = append(flats, randomColor(flatToDivider[i], i))
+		}
+		row = append(row, strings.Join(flats, " "))
+
+		err := table.Append(row...)
+		if err != nil {
+			return err
+		}
+	}
+
+	return table.Render()
+}
+
+func randomColor(seed int, args any) string {
+	return color.New(color.Bold, color.Attribute(31+seed%7)).Sprint(args)
 }
