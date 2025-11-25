@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,6 +33,16 @@ func execute(cmd *cobra.Command, args []string) error {
 		dir = args[0]
 	}
 
+	showOutput, err := cmd.Flags().GetBool("output")
+	if err != nil {
+		return err
+	}
+
+	w := io.Discard
+	if showOutput {
+		w = os.Stdout
+	}
+
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to read directory %q: %w", dir, err)
@@ -39,15 +50,20 @@ func execute(cmd *cobra.Command, args []string) error {
 
 	for _, file := range files {
 		if file.IsDir() {
+			// папки пропускаем
 			continue
 		} else if !strings.HasSuffix(file.Name(), ".xlsx") {
+			// файлы с другими расширениями тоже пропускаем
 			continue
 		}
 
 		// Складываем имя файла и имя папки в один путь.
 		path := filepath.Join(dir, file.Name())
 
-		fmt.Println("Processing", path)
+		_, err = fmt.Fprintln(w, "Processing", path)
+		if err != nil {
+			return err
+		}
 
 		// Считываем исходные данные из найденного файла.
 		floors, splitters, err := parseFile(path)
@@ -59,17 +75,18 @@ func execute(cmd *cobra.Command, args []string) error {
 		splitters = calculate(floors, splitters)
 
 		// Отобразить план этажей в терминале
-		err = displayFloors(floors, splitters)
+		err = displayFloors(w, floors, splitters)
 		if err != nil {
 			return err
 		}
 
 		// Отобразить разделители с соответствующими квартирами
-		err = displayDividers(splitters)
+		err = displayDividers(w, splitters)
 		if err != nil {
 			return err
 		}
 
+		// Записываем результаты в файлек
 		err = writeResults(path, splitters)
 		if err != nil {
 			return err

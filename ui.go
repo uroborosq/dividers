@@ -1,7 +1,7 @@
 package main
 
 import (
-	"os"
+	"io"
 	"slices"
 	"strings"
 
@@ -63,8 +63,8 @@ func chooseFile(path string) (string, bool) {
 	return mm.selectedFile, mm.selectedFile == ""
 }
 
-func displayDividers(splitters [][]Splitter) error {
-	table := tablewriter.NewWriter(os.Stdout)
+func displayDividers(w io.Writer, splitters [][]Splitter) error {
+	table := tablewriter.NewWriter(w)
 
 	for j := range len(splitters[0]) {
 		var row []any
@@ -84,8 +84,8 @@ func displayDividers(splitters [][]Splitter) error {
 	return table.Render()
 }
 
-func displayFloors(floors []Floor, splitters [][]Splitter) error {
-	table := tablewriter.NewWriter(os.Stdout)
+func displayFloors(w io.Writer, floors []Floor, splitters [][]Splitter) error {
+	table := tablewriter.NewWriter(w)
 
 	flatToDivider := make(map[int]int)
 	for _, riser := range splitters {
