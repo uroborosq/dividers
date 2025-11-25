@@ -3,11 +3,12 @@ package main
 import (
 	"math"
 	"slices"
+	"sort"
 
 	"github.com/samber/lo"
 )
 
-func calculate(floors []Floor, dividers [][]Divider) [][]Divider {
+func calculate(floors []Floor, splitters [][]Splitter) [][]Splitter {
 	riserToFlatNumber := make([]int, len(floors[0].Risers))
 	riserToPortNumber := make([]int, len(floors[0].Risers))
 
@@ -16,25 +17,26 @@ func calculate(floors []Floor, dividers [][]Divider) [][]Divider {
 			riserToFlatNumber[i] += riser.FlatNumber
 		}
 	}
-	for i := range dividers {
-		riserToPortNumber[i] = lo.SumBy(dividers[i], Divider.GetPortNumber)
+	for i := range splitters {
+		riserToPortNumber[i] = lo.SumBy(splitters[i], Splitter.GetPortNumber)
 	}
 
-	for i, riser := range dividers {
+	for i, riser := range splitters {
 		var flatPointer, floorPointer int
 
-		for j, divider := range riser {
-			flatLeft := int(math.Round(float64(divider.PortNumber) * float64(riserToFlatNumber[i]) / float64(riserToPortNumber[i])))
+		for j, splitter := range riser {
+			flatLeft := int(math.Round(float64(splitter.PortNumber) * float64(riserToFlatNumber[i]) / float64(riserToPortNumber[i])))
 
 			riserToFlatNumber[i] -= flatLeft
-			riserToPortNumber[i] -= divider.PortNumber
+			riserToPortNumber[i] -= splitter.PortNumber
 
 			for _, floor := range floors[floorPointer:] {
 				previousRiserFlats := lo.SumBy(floor.Risers[:i], func(item Riser) int { return item.FlatNumber })
 				nextRiserFlats := lo.SumBy(floor.Risers[i+1:], func(item Riser) int { return item.FlatNumber })
 
 				flatLimit := max(0, floor.Risers[i].FlatNumber-flatLeft)
-				dividers[i][j].Flats = append(dividers[i][j].Flats, FlatRange{
+
+				splitters[i][j].Flats = append(splitters[i][j].Flats, FlatRange{
 					FlatStart: floor.Flats.FlatStart + previousRiserFlats + flatPointer,
 					FlatEnd:   floor.Flats.FlatEnd - nextRiserFlats - flatLimit,
 				})
@@ -53,8 +55,13 @@ func calculate(floors []Floor, dividers [][]Divider) [][]Divider {
 					break
 				}
 			}
+
+			sort.Slice(
+				splitters[i][j].Flats,
+				func(k, l int) bool { return splitters[i][j].Flats[k].FlatStart < splitters[i][j].Flats[l].FlatEnd },
+			)
 		}
 	}
 
-	return dividers
+	return splitters
 }

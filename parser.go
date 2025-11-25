@@ -10,7 +10,7 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-func parseFile(path string) ([]Floor, [][]Divider, error) {
+func parseFile(path string) ([]Floor, [][]Splitter, error) {
 	f, err := excelize.OpenFile(path)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to open file %q: %w", path, err)
@@ -23,7 +23,7 @@ func parseFile(path string) ([]Floor, [][]Divider, error) {
 
 	var (
 		floors   []Floor
-		dividers [][]Divider
+		dividers [][]Splitter
 	)
 	sheetName := f.GetSheetList()[0]
 
@@ -62,7 +62,7 @@ func parseFile(path string) ([]Floor, [][]Divider, error) {
 		})
 	}
 
-	dividers = make([][]Divider, (len(rows[offset+5])+1)/2)
+	dividers = make([][]Splitter, (len(rows[offset+5])+1)/2)
 
 	for i := offset + 5; i < len(rows); i++ {
 		for j := 0; j < len(rows[i]); j += 2 {
@@ -70,9 +70,79 @@ func parseFile(path string) ([]Floor, [][]Divider, error) {
 			if err != nil {
 				return nil, nil, fmt.Errorf("failed to parse cell %d:%d: %w", i, j, err)
 			}
-			dividers[j/2] = append(dividers[j/2], Divider{PortNumber: portNumber})
+
+			dividers[j/2] = append(dividers[j/2], Splitter{PortNumber: portNumber})
 		}
 	}
 
 	return floors, dividers, nil
+}
+
+func writeResults(path string, splitters [][]Splitter) error {
+	f, err := excelize.OpenFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to open file %q: %w", path, err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to close file %q: %s", path, err.Error())
+		}
+	}()
+
+	sheetName := f.GetSheetList()[0]
+
+	baseColumn := 'B'
+	baseRow := 1
+
+	for {
+		value, err := f.GetCellValue(sheetName, string(baseColumn)+strconv.Itoa(baseRow))
+		if err != nil {
+			return err
+		}
+
+		if value == "Кв-ры" {
+			break
+		}
+
+		baseRow++
+	}
+	style, err := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			WrapText: false,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	for i, riser := range splitters {
+		column := string(baseColumn + 2*rune(i))
+		var width int
+
+		for j, splitter := range riser {
+			formatted := strings.Join(lo.Map(splitter.Flats, func(item FlatRange, index int) string { return item.String() }), ",")
+			cell := column + strconv.Itoa(j+baseRow+1)
+
+			if len([]rune(formatted)) > width {
+				width = len([]rune(formatted))
+			}
+
+			err = f.SetCellValue(sheetName, cell, formatted)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = f.SetColStyle(sheetName, column, style)
+		if err != nil {
+			return err
+		}
+
+		err = f.SetColWidth(sheetName, column, column, float64(width))
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return f.Save()
 }

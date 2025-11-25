@@ -3,59 +3,78 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/spf13/cobra"
 )
 
-func getWorkingDirectory() (string, error) {
-	// Проверяем, переопределил ли пользователь рабочую папку.
-	// Первый аргумент всегда - название самой программы, а вот если есть второй - значит переопределил
-	// И мы его берем используем
-	if len(os.Args) == 2 {
-		return os.Args[1], nil
+func main() {
+	cmd := cobra.Command{
+		Use:   "dividers",
+		Short: "calculate",
+		Args:  cobra.RangeArgs(0, 1),
+		RunE:  execute,
 	}
 
-	// Если пользователь ничего не указывал, то используем текущую рабочую папку (из которой открыта программа)
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("failed to get current working directory: %w", err)
-	}
+	cmd.Flags().Bool("output", false, "show colorized schema with floors and splitters")
 
-	return wd, nil
+	_ = cmd.Execute()
 }
 
-func main() {
-	// Получить путь к рабочей папке, из которой будет начат поиск исходного файла.
-	workingDirectory, err := getWorkingDirectory()
+func execute(cmd *cobra.Command, args []string) error {
+	dir, err := os.Getwd()
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	// Запускаем диалог поиска нужного исходного файла в заданной рабочей папке.
-	filePath, choosed := chooseFile(workingDirectory)
-	if choosed {
-		fmt.Println("no file choose, exiting")
-		return
+	if len(args) == 1 {
+		dir = args[0]
 	}
 
-	// Считываем исходные данные из найденного файла.
-	floors, dividers, err := parseFile(filePath)
+	files, err := os.ReadDir(dir)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to read directory %q: %w", dir, err)
 	}
 
-	// Распределяем квартиры по разделителям.
-	dividers = calculate(floors, dividers)
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		} else if !strings.HasSuffix(file.Name(), ".xlsx") {
+			continue
+		}
 
-	displayer := NewDisplayer(floors, dividers)
+		// Складываем имя файла и имя папки в один путь.
+		path := filepath.Join(dir, file.Name())
 
-	// Отобразить план этажей в терминале
-	err = displayer.displayFloors()
-	if err != nil {
-		panic(err)
+		fmt.Println("Processing", path)
+
+		// Считываем исходные данные из найденного файла.
+		floors, splitters, err := parseFile(path)
+		if err != nil {
+			return err
+		}
+
+		// Распределяем квартиры по разделителям.
+		splitters = calculate(floors, splitters)
+
+		// Отобразить план этажей в терминале
+		err = displayFloors(floors, splitters)
+		if err != nil {
+			return err
+		}
+
+		// Отобразить разделители с соответствующими квартирами
+		err = displayDividers(splitters)
+		if err != nil {
+			return err
+		}
+
+		err = writeResults(path, splitters)
+		if err != nil {
+			return err
+		}
 	}
 
-	// Отобразить разделители с соответствующими квартирами
-	err = displayer.displayDividers()
-	if err != nil {
-		panic(err)
-	}
+	return nil
 }

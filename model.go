@@ -33,12 +33,12 @@ type Riser struct {
 	FlatNumber int
 }
 
-type Divider struct {
+type Splitter struct {
 	// Количество портов в разделителе.
 	PortNumber int
 	Flats      []FlatRange
 }
 
-func (d Divider) GetPortNumber() int {
+func (d Splitter) GetPortNumber() int {
 	return d.PortNumber
 }

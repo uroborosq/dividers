@@ -63,25 +63,12 @@ func chooseFile(path string) (string, bool) {
 	return mm.selectedFile, mm.selectedFile == ""
 }
 
-type Displayer struct {
-	floors   []Floor
-	dividers [][]Divider
-}
-
-func NewDisplayer(floors []Floor, dividers [][]Divider) *Displayer {
-	return &Displayer{
-		floors:   floors,
-		dividers: dividers,
-	}
-
-}
-
-func (d Displayer) displayDividers() error {
+func displayDividers(splitters [][]Splitter) error {
 	table := tablewriter.NewWriter(os.Stdout)
 
-	for j := range len(d.dividers[0]) {
+	for j := range len(splitters[0]) {
 		var row []any
-		for _, riser := range d.dividers {
+		for _, riser := range splitters {
 			flats := strings.Join(lo.Map(riser[j].Flats, func(item FlatRange, _ int) string { return item.String() }), ",")
 
 			row = append(row, randomColor(j, flats))
@@ -97,13 +84,13 @@ func (d Displayer) displayDividers() error {
 	return table.Render()
 }
 
-func (d Displayer) displayFloors() error {
+func displayFloors(floors []Floor, splitters [][]Splitter) error {
 	table := tablewriter.NewWriter(os.Stdout)
 
 	flatToDivider := make(map[int]int)
-	for _, riser := range d.dividers {
-		for j, divider := range riser {
-			for _, flatRange := range divider.Flats {
+	for _, riser := range splitters {
+		for j, splitter := range riser {
+			for _, flatRange := range splitter.Flats {
 				for i := flatRange.FlatStart; i <= flatRange.FlatEnd; i++ {
 					flatToDivider[i] = j
 				}
@@ -111,7 +98,7 @@ func (d Displayer) displayFloors() error {
 		}
 	}
 
-	for floor := range slices.Values(d.floors) {
+	for floor := range slices.Values(floors) {
 		var row []any
 
 		row = append(row, floor.Number)
