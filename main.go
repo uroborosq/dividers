@@ -6,47 +6,37 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/spf13/cobra"
 )
 
 func main() {
-	cmd := cobra.Command{
-		Use:   "dividers",
-		Short: "calculate",
-		Args:  cobra.RangeArgs(0, 1),
-		RunE:  execute,
+	// w, err := os.OpenFile("splitter.log", os.O_APPEND|os.O_RDWR|os.O_CREATE, os.ModePerm)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer w.Close()
+	w := os.Stdout
+	err := execute(w)
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
 	}
-
-	cmd.Flags().Bool("output", false, "show colorized schema with floors and splitters")
-
-	_ = cmd.Execute()
 }
 
-func execute(cmd *cobra.Command, args []string) error {
+func execute(w io.Writer) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	if len(args) == 1 {
-		dir = args[0]
-	}
-
-	showOutput, err := cmd.Flags().GetBool("output")
-	if err != nil {
-		return err
-	}
-
-	w := io.Discard
-	if showOutput {
-		w = os.Stdout
+	if len(os.Args) == 2 {
+		dir = os.Args[1]
 	}
 
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to read directory %q: %w", dir, err)
 	}
+
+	w.Write([]byte(dir))
 
 	for _, file := range files {
 		if file.IsDir() {
@@ -60,6 +50,7 @@ func execute(cmd *cobra.Command, args []string) error {
 		// Складываем имя файла и имя папки в один путь.
 		path := filepath.Join(dir, file.Name())
 
+		// Пишем загадочную умную надпись
 		_, err = fmt.Fprintln(w, "Processing", path)
 		if err != nil {
 			return err

@@ -3,9 +3,9 @@ version: '3'
 tasks:
   build:
     cmds:
-      - cmd: go build -o dividers.exe .
+      - cmd: go build -ldflags="-H windowsgui" -o splitters.exe .
         platforms: [windows]
-      - cmd: go build -o dividers .
+      - cmd: go build -o splitters .
         platforms: [linux]
   run:
     cmds:
