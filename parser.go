@@ -65,6 +65,10 @@ func parseFile(path string) ([]Floor, [][]Splitter, error) {
 	dividers = make([][]Splitter, (len(rows[offset+5])+1)/2)
 
 	for i := offset + 5; i < len(rows); i++ {
+		if len(rows[i]) == 0 || rows[i][0] == "" {
+			continue
+		}
+
 		for j := 0; j < len(rows[i]); j += 2 {
 			portNumber, err := strconv.Atoi(strings.TrimSpace(rows[i][j]))
 			if err != nil {
