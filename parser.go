@@ -64,12 +64,26 @@ func parseFile(path string) ([]Floor, [][]Splitter, error) {
 
 	dividers = make([][]Splitter, (len(rows[offset+5])+1)/2)
 
-	for i := offset + 5; i < len(rows); i++ {
-		if len(rows[i]) == 0 || rows[i][0] == "" {
+	offset++
+
+	for ; offset < len(rows); offset++ {
+		if len(rows[offset]) == 0 {
 			continue
 		}
 
+		_, err := strconv.Atoi(rows[offset][0])
+		if err == nil {
+			break
+		}
+
+	}
+
+	for i := offset; i < len(rows); i++ {
 		for j := 0; j < len(rows[i]); j += 2 {
+			if rows[i][j] == "" {
+				continue
+			}
+
 			portNumber, err := strconv.Atoi(strings.TrimSpace(rows[i][j]))
 			if err != nil {
 				return nil, nil, fmt.Errorf("failed to parse cell %d:%d: %w", i, j, err)
@@ -123,7 +137,7 @@ func writeResults(path string, splitters [][]Splitter) error {
 		var width int
 
 		for j, splitter := range riser {
-			formatted := strings.Join(lo.Map(splitter.Flats, func(item FlatRange, index int) string { return item.String() }), ",")
+			formatted := splitter.Flats.String()
 			cell := column + strconv.Itoa(j+baseRow+1)
 
 			if len([]rune(formatted)) > width {

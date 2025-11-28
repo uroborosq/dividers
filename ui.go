@@ -1,22 +1,27 @@
 package main
 
 import (
+	"cmp"
 	"io"
 	"slices"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
-	"github.com/samber/lo"
 )
 
 func displayDividers(w io.Writer, splitters [][]Splitter) error {
 	table := tablewriter.NewWriter(w)
 
-	for j := range len(splitters[0]) {
+	for j := range len(slices.MaxFunc(splitters, func(a, b []Splitter) int { return cmp.Compare(len(a), len(b)) })) {
 		var row = []any{j}
 		for _, riser := range splitters {
-			flats := strings.Join(lo.Map(riser[j].Flats, func(item FlatRange, _ int) string { return item.String() }), ",")
+			if len(riser) <= j {
+				row = append(row, 0, "")
+				continue
+			}
+
+			flats := riser[j].Flats.String()
 
 			row = append(row, riser[j].PortNumber, randomColor(j, flats))
 		}

@@ -9,15 +9,22 @@ import (
 )
 
 func main() {
-	// w, err := os.OpenFile("splitter.log", os.O_APPEND|os.O_RDWR|os.O_CREATE, os.ModePerm)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer w.Close()
-	w := os.Stdout
-	err := execute(w)
+	w, err := os.OpenFile("splitter.log", os.O_APPEND|os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
-		fmt.Fprintln(w, err.Error())
+		panic(err)
+	}
+	defer w.Close()
+
+	var writers = []io.Writer{w}
+	_, err = fmt.Println("splitters")
+	if err == nil {
+		writers = append(writers, os.Stdout)
+	}
+
+	wr := io.MultiWriter(writers...)
+	err = execute(wr)
+	if err != nil {
+		fmt.Fprintln(wr, err.Error())
 	}
 }
 

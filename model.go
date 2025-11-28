@@ -1,6 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/samber/lo"
+)
 
 // Этаж
 type Floor struct {
@@ -12,6 +18,14 @@ type Floor struct {
 	Flats FlatRange
 }
 
+type FlatRanges []FlatRange
+
+func (r FlatRanges) String() string {
+	formatted := strings.Join(lo.Map(r, func(item FlatRange, index int) string { return item.String() }), ",")
+
+	return formatted + "кв"
+}
+
 type FlatRange struct {
 	// Начальный номер квартиры
 	FlatStart int
@@ -21,10 +35,10 @@ type FlatRange struct {
 
 func (r FlatRange) String() string {
 	if r.FlatStart == r.FlatEnd {
-		return fmt.Sprintf("%dкв", r.FlatStart)
+		return strconv.Itoa(r.FlatEnd)
 	}
 
-	return fmt.Sprintf("%d-%dкв", r.FlatStart, r.FlatEnd)
+	return fmt.Sprintf("%d-%d", r.FlatStart, r.FlatEnd)
 }
 
 // Стояк отопления
@@ -36,7 +50,7 @@ type Riser struct {
 type Splitter struct {
 	// Количество портов в разделителе.
 	PortNumber int
-	Flats      []FlatRange
+	Flats      FlatRanges
 }
 
 func (d Splitter) GetPortNumber() int {

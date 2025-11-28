@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"slices"
 	"sort"
@@ -31,7 +30,6 @@ func calculate(floors []Floor, splitters [][]Splitter) [][]Splitter {
 			riserToFlatNumber[i] -= flatLeft
 			riserToPortNumber[i] -= splitter.PortNumber
 
-			fmt.Println(flatLeft)
 			for _, floor := range floors[floorPointer:] {
 				previousRiserFlats := lo.SumBy(floor.Risers[:i], func(item Riser) int { return item.FlatNumber })
 				nextRiserFlats := lo.SumBy(floor.Risers[i+1:], func(item Riser) int { return item.FlatNumber })
