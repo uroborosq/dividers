@@ -46,49 +46,57 @@ func execute(w io.Writer) error {
 	w.Write([]byte(dir))
 
 	for _, file := range files {
-		if file.IsDir() {
-			// папки пропускаем
-			continue
-		} else if !strings.HasSuffix(file.Name(), ".xlsx") {
-			// файлы с другими расширениями тоже пропускаем
-			continue
+		if err := processFile(w, dir, file); err != nil {
+			fmt.Fprintf(w, "processing file %q failed: %s", file.Name())
 		}
+	}
 
-		// Складываем имя файла и имя папки в один путь.
-		path := filepath.Join(dir, file.Name())
+	return nil
+}
 
-		// Пишем загадочную умную надпись
-		_, err = fmt.Fprintln(w, "Processing", path)
-		if err != nil {
-			return err
-		}
+func processFile(w io.Writer, dir string, file os.DirEntry) error {
+	if file.IsDir() {
+		// папки пропускаем
+		return nil
+	} else if !strings.HasSuffix(file.Name(), ".xlsx") {
+		// файлы с другими расширениями тоже пропускаем
+		return nil
+	}
 
-		// Считываем исходные данные из найденного файла.
-		floors, splitters, err := parseFile(path)
-		if err != nil {
-			return err
-		}
+	// Складываем имя файла и имя папки в один путь.
+	path := filepath.Join(dir, file.Name())
 
-		// Распределяем квартиры по разделителям.
-		splitters = calculate(floors, splitters)
+	// Пишем загадочную умную надпись
+	_, err := fmt.Fprintln(w, "Processing", path)
+	if err != nil {
+		return err
+	}
 
-		// Отобразить план этажей в терминале
-		err = displayFloors(w, floors, splitters)
-		if err != nil {
-			return err
-		}
+	// Считываем исходные данные из найденного файла.
+	floors, splitters, err := parseFile(path)
+	if err != nil {
+		return err
+	}
 
-		// Отобразить разделители с соответствующими квартирами
-		err = displayDividers(w, splitters)
-		if err != nil {
-			return err
-		}
+	// Распределяем квартиры по разделителям.
+	splitters = calculate(floors, splitters)
 
-		// Записываем результаты в файлек
-		err = writeResults(path, splitters)
-		if err != nil {
-			return err
-		}
+	// Отобразить план этажей в терминале
+	err = displayFloors(w, floors, splitters)
+	if err != nil {
+		return err
+	}
+
+	// Отобразить разделители с соответствующими квартирами
+	err = displayDividers(w, splitters)
+	if err != nil {
+		return err
+	}
+
+	// Записываем результаты в файлек
+	err = writeResults(path, splitters)
+	if err != nil {
+		return err
 	}
 
 	return nil

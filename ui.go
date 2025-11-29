@@ -40,11 +40,20 @@ func displayFloors(w io.Writer, floors []Floor, splitters [][]Splitter) error {
 	table := tablewriter.NewWriter(w)
 
 	flatToDivider := make(map[int]int)
+	flatToStart := make(map[int]struct{})
+	flatToEnd := make(map[int]struct{})
 	for _, riser := range splitters {
 		for j, splitter := range riser {
-			for _, flatRange := range splitter.Flats {
+			for k, flatRange := range splitter.Flats {
 				for i := flatRange.FlatStart; i <= flatRange.FlatEnd; i++ {
 					flatToDivider[i] = j
+				}
+
+				if k == 0 {
+					flatToStart[flatRange.FlatStart] = struct{}{}
+				}
+				if k == len(splitter.Flats)-1 {
+					flatToEnd[flatRange.FlatEnd] = struct{}{}
 				}
 			}
 		}
@@ -68,7 +77,15 @@ func displayFloors(w io.Writer, floors []Floor, splitters [][]Splitter) error {
 				flats = nil
 			}
 
-			flats = append(flats, randomColor(flatToDivider[i], i))
+			formatted := randomColor(flatToDivider[i], i)
+			if _, found := flatToStart[i]; found {
+				formatted = "[" + formatted
+			}
+			if _, found := flatToEnd[i]; found {
+				formatted = formatted + "]"
+			}
+
+			flats = append(flats, formatted)
 		}
 		row = append(row, strings.Join(flats, " "))
 
