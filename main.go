@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	w, err := os.OpenFile("splitter.log", os.O_APPEND|os.O_RDWR|os.O_CREATE, os.ModePerm)
+	w, err := os.OpenFile("splitter.rtf", os.O_APPEND|os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
