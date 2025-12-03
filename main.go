@@ -9,22 +9,20 @@ import (
 )
 
 func main() {
-	w, err := os.OpenFile("splitter.rtf", os.O_APPEND|os.O_RDWR|os.O_CREATE, os.ModePerm)
+	rtfFile, err := os.Create("splitter.rtf")
 	if err != nil {
 		panic(err)
 	}
-	defer w.Close()
 
-	var writers = []io.Writer{w}
+	rtf := newRTFWriter(rtfFile)
+	defer rtfFile.Close()
+	defer rtf.Close()
+
+	writer := dualWriter{console: os.Stdout, rtf: rtf}
 	_, err = fmt.Println("splitters")
-	if err == nil {
-		writers = append(writers, os.Stdout)
-	}
-
-	wr := io.MultiWriter(writers...)
-	err = execute(wr)
+	err = execute(writer)
 	if err != nil {
-		fmt.Fprintln(wr, err.Error())
+		fmt.Fprintln(writer, err.Error())
 	}
 }
 
