@@ -47,7 +47,7 @@ func execute(w io.Writer) error {
 
 	for _, file := range files {
 		if err := processFile(w, dir, file); err != nil {
-			fmt.Fprintf(w, "processing file %q failed: %s", file.Name())
+			fmt.Fprintf(w, "processing file %q failed: %s", file.Name(), err.Error())
 		}
 	}
 
